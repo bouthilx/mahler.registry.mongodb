@@ -31,7 +31,7 @@ setup_args = dict(
             'mongodb = mahler.registry.mongodb'
             ],
         },
-    install_requires=['mahler.core'],
+    install_requires=['mahler.core', 'pymongo'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     extras_require=dict(test=tests_require),
