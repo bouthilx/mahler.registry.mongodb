@@ -28,7 +28,3 @@ __url__ = 'https://github.com/bouthilx/mahler.registry.mongodb'
 def build(*args, **kwargs):
     """Build the RegistrarDB object"""
     return MongoDBRegistrarDB(*args, **kwargs)
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
