@@ -51,10 +51,9 @@ Requirements
 Installation
 ------------
 
-You can install "pytest-mongodb" via `pip`_ from `PyPI`_::
+You can install "mahler.registry.mongodb" via `pip`_ from `PyPI`_::
 
-    $ pip install pytest-mongodb
-
+    $ pip install git+https://github.com/bouthilx/mahler.registry.mongodb.git
 
 Usage
 -----
