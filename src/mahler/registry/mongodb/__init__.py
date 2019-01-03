@@ -9,8 +9,15 @@
 
 TODO: Write long description
 """
+import os
+import socket
+
+import mahler.core
+import mahler.core.utils.config
+
 from ._version import get_versions
 from .registrar import MongoDBRegistrarDB
+
 
 VERSIONS = get_versions()
 del get_versions
@@ -24,7 +31,34 @@ __author_email__ = 'xavier.bouthillier@umontreal.ca'
 __copyright__ = u'2018, Xavier Bouthillier'
 __url__ = 'https://github.com/bouthilx/mahler.registry.mongodb'
 
+DEF_CONFIG_FILES_PATHS = [
+    os.path.join(mahler.core.DIRS.site_data_dir, 'registry', 'mongodb', 'config.yaml.example'),
+    os.path.join(mahler.core.DIRS.site_config_dir, 'registry', 'mongodb', 'config.yaml'),
+    os.path.join(mahler.core.DIRS.user_config_dir, 'registry', 'mongodb', 'config.yaml')
+    ]
+
 
 def build(*args, **kwargs):
     """Build the RegistrarDB object"""
     return MongoDBRegistrarDB(*args, **kwargs)
+
+
+def define_config():
+    config = mahler.core.utils.config.Configuration()
+    config.add_option(
+        'name', type=str, default='mahler', env_var='MAHLER_REGISTRY_MONGODB_NAME')
+    config.add_option(
+        'host', type=str, default=socket.gethostbyname(socket.gethostname()),
+        env_var='MAHLER_REGISTRY_MONGODB_HOST')
+
+    return config
+
+
+def parse_config_files(config):
+    mahler.core.utils.config.parse_config_files(
+        config, mahler.core.DEF_CONFIG_FILES_PATHS,
+        base='registry.mongodb')
+
+    mahler.core.utils.config.parse_config_files(
+        config, DEF_CONFIG_FILES_PATHS,
+        )

@@ -21,10 +21,10 @@ class MongoDBRegistrarDB(RegistrarDB):
     """
     """
 
-    def __init__(self):
+    def __init__(self, name, host):
         """
         """
-        self._client = MongoClient(username='user', password='pass', authSource='mahler_test')
+        self._client = MongoClient(host)
         self._db = self._client.mahler_test
 
         for subcollection in ['status', 'tags', 'stdout', 'stderr']:
