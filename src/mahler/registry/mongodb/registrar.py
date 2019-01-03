@@ -45,7 +45,7 @@ class MongoDBRegistrarDB(RegistrarDB):
 
     # TODO: Register reports
 
-    def retrieve_tasks(self, tags, status=None):
+    def retrieve_tasks(self, tags, container=None, status=None):
         """
         """
         task_ids = set()
@@ -73,6 +73,13 @@ class MongoDBRegistrarDB(RegistrarDB):
             task_ids = (doc['_id'] for doc in self._db.tasks.find(projection={'_id': 1}))
 
         for task_id in task_ids:
+            task = None
+            if container is not None:
+                task = list(self._db.tasks.find({'_id': task_id, 'registry.container': container}))
+                assert len(task) < 2
+                if not task:
+                    continue
+
             if status is not None:
                 status_events = self._db.tasks.status.find(
                     {'task_id': task_id}, sort=[('runtime_timestamp', -1)]).limit(1)
@@ -81,8 +88,10 @@ class MongoDBRegistrarDB(RegistrarDB):
                 if not status_events or status_events[0]['item']['name'] != status.name:
                     continue
 
-            task = list(self._db.tasks.find({'_id': task_id}))
-            assert len(task) == 1
+            if task is None:
+                task = list(self._db.tasks.find({'_id': task_id}))
+                assert len(task) == 1
+
             task = task[0]
             task['id'] = task.pop('_id')
             yield task
