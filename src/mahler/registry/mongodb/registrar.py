@@ -45,9 +45,21 @@ class MongoDBRegistrarDB(RegistrarDB):
 
     # TODO: Register reports
 
-    def retrieve_tasks(self, tags, container=None, status=None):
+    def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None):
         """
         """
+        print(id, tags, container, status)
+        if id is not None:
+            task = list(self._db.tasks.find({'_id': id}))
+
+            if not task:
+                raise StopIteration
+
+            task = task[0]
+            task['id'] = task.pop('_id')
+            yield task
+            raise StopIteration
+
         task_ids = set()
 
         # query all tag events
