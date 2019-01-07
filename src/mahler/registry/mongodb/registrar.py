@@ -10,12 +10,18 @@
 TODO: Write long description
 
 """
+import logging
+import pprint
+
 import bson.objectid
 from pymongo import MongoClient
 import pymongo.errors
 
 from mahler.core.registrar import RegistrarDB, RaceCondition
 import mahler.core.status
+
+
+logger = logging.getLogger(__name__)
 
 
 class MongoDBRegistrarDB(RegistrarDB):
@@ -32,23 +38,101 @@ class MongoDBRegistrarDB(RegistrarDB):
             dbcollection = self._db['tasks.{}'.format(subcollection)]
             dbcollection.create_index([('task_id', pymongo.ASCENDING)], background=True)
 
-        self._db.tasks.status.create_index([('runtime_timestamp', pymongo.DESCENDING)], background=True)
+        self._db.tasks.status.create_index(
+            [('runtime_timestamp', pymongo.DESCENDING)], background=True)
         self._db.tasks.tags.create_index([('item.tag', pymongo.ASCENDING)], background=True)
+
+        self._db.tasks.report.create_index(
+            [('registry.status', pymongo.ASCENDING)], background=True)
+        self._db.tasks.report.create_index(
+            [('registry.tags', pymongo.ASCENDING)], background=True)
+        self._db.tasks.report.create_index(
+            [('registry.container', pymongo.ASCENDING)], background=True)
 
     # There is no need to register a task again, only update moving parts
     def register_task(self, task):
         """
         """
-        task_doc = task.to_dict()
+        task_doc = task.to_dict(report=False)
         self._db.tasks.insert_one(task_doc)
         # TODO: Test whether task id is valid
         task.id = task_doc['_id']
 
-    # TODO: Register reports
+    def update_report(self, task, upsert=False):
+        updated = False
+        if upsert:
+            task_report = task.to_dict()
+            task_report['_id'] = task_report.pop('id')
+            try:
+                self._db.tasks.report.insert_one(task_report)
+                updated = True
+            except pymongo.errors.DuplicateKeyError as e:
+                logger.info('Report {} already registered'.format(task.id))
 
-    def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None):
+        if not updated:
+            query = {'_id': task.id}
+
+            update = {
+                '$set': {
+                    'registry.status': task.status.name,
+                    'registry.tags': sorted(task.tags)
+                    }
+                }
+
+            self._db.tasks.report.update_one(query, update)
+
+    def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None, limit=None,
+                       use_report=True, projection=None):
         """
         """
+        if limit is not None and limit < 1:
+            raise StopIteration
+
+        query = {}
+
+        # projection should have status, tags, host and priority set to 0 by default
+        # We don't use them when building the task so we don't need to fetch.
+        if projection and all(v == 0 for v in projection.values()):
+            projection.setdefault('registry.status', 0)
+            projection.setdefault('registry.tags', 0)
+
+        if projection and 'id' in projection:
+            projection['_id'] = projection.pop('id')
+
+        if id is not None:
+            if not isinstance(id, bson.objectid.ObjectId):
+                id = bson.objectid.ObjectId(id)
+            query['_id'] = id
+
+        if id is None and tags:
+            query['registry.tags'] = {'$all': tags}
+
+        if id is None and container and isinstance(container, (list, tuple)):
+            query['registry.container'] = {'$in': container}
+        elif id is None and container:
+            query['registry.container'] = {'$eq': container}
+
+        if id is None and status and isinstance(status, (list, tuple)):
+            query['registry.status'] = {'$in': [status_i.name for status_i in status]}
+        elif id is None and status:
+            query['registry.status'] = {'$eq': status.name}
+
+        logger.debug('Querying tasks.report with query:\n{}'.format(pprint.pformat(query)))
+        if projection:
+            logger.debug(
+                'Querying tasks.report with projection:\n{}'.format( pprint.pformat(projection)))
+
+        cursor = self._db.tasks.report.find(query, projection=projection)
+
+        if limit:
+            cursor = cursor.limit(int(limit))
+
+        for task_document in cursor:
+            task_document['id'] = task_document.pop('_id')
+            yield task_document
+
+    def retrieve_tasks_backup(self, id=None, tags=tuple(), container=None, status=None,
+                              use_report=True):
         if id is not None:
             if not isinstance(id, bson.objectid.ObjectId):
                 id = bson.objectid.ObjectId(id)
@@ -143,4 +227,8 @@ class MongoDBRegistrarDB(RegistrarDB):
         if docs:
             return docs[0]['output']
 
+        return None
+
+    def retrieve_volume(self, task):
+        # TODO
         return None
