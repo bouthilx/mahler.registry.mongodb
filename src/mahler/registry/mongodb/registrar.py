@@ -10,6 +10,7 @@
 TODO: Write long description
 
 """
+import bson.objectid
 from pymongo import MongoClient
 import pymongo.errors
 
@@ -48,12 +49,13 @@ class MongoDBRegistrarDB(RegistrarDB):
     def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None):
         """
         """
-        print(id, tags, container, status)
         if id is not None:
+            if not isinstance(id, bson.objectid.ObjectId):
+                id = bson.objectid.ObjectId(id)
             task = list(self._db.tasks.find({'_id': id}))
 
             if not task:
-                raise StopIteration
+                raise RuntimeError
 
             task = task[0]
             task['id'] = task.pop('_id')
