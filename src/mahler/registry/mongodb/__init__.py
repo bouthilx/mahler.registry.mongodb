@@ -15,6 +15,8 @@ import socket
 import mahler.core
 import mahler.core.utils.config
 
+import mahler.registry.mongodb.cli.init
+
 from ._version import get_versions
 from .registrar import MongoDBRegistrarDB
 
@@ -41,6 +43,13 @@ DEF_CONFIG_FILES_PATHS = [
 def build(*args, **kwargs):
     """Build the RegistrarDB object"""
     return MongoDBRegistrarDB(*args, **kwargs)
+
+
+def build_init_parser(parser):
+    """Return the parser that needs to be used for this command"""
+    mongodb_init_parser = parser.add_parser('mongodb', help='mongodb init help')
+
+    mongodb_init_parser.set_defaults(subfunc=mahler.registry.mongodb.cli.init.main)
 
 
 def define_config():
