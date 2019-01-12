@@ -17,7 +17,8 @@ import bson.objectid
 from pymongo import MongoClient
 import pymongo.errors
 
-from mahler.core.registrar import RegistrarDB, RaceCondition
+from mahler.core.registrar import RegistrarDB
+from mahler.core.utils.errors import RaceCondition
 import mahler.core.status
 
 
@@ -58,28 +59,39 @@ class MongoDBRegistrarDB(RegistrarDB):
         # TODO: Test whether task id is valid
         task.id = task_doc['_id']
 
-    def update_report(self, task, upsert=False):
-        updated = False
+    def update_report(self, task_report, update_output=False, upsert=False):
         if upsert:
-            task_report = task.to_dict()
             task_report['_id'] = task_report.pop('id')
             try:
                 self._db.tasks.report.insert_one(task_report)
-                updated = True
             except pymongo.errors.DuplicateKeyError as e:
-                logger.info('Report {} already registered'.format(task.id))
+                message = 'Report {} already registered'.format(task_report['_id'])
+                logger.info(message)
+                raise RaceCondition(message)
 
-        if not updated:
-            query = {'_id': task.id}
+            return
 
-            update = {
-                '$set': {
-                    'registry.status': task.status.name,
-                    'registry.tags': sorted(task.tags)
-                    }
+        registry_fields_to_update = ['started_on', 'stopped_on', 'updated_on', 'reported_on',
+                                     'duration', 'status', 'tags']
+
+        query = {'_id': task_report['id']}
+
+        update = {
+            '$set': {
+                'registry.{}'.format(name): task_report['registry'][name]
+                for name in registry_fields_to_update
                 }
+            }
 
-            self._db.tasks.report.update_one(query, update)
+        if update_output:
+            update['$set']['output'] = task_report['output']
+            update['$set']['volume'] = task_report['volume']
+
+        result = self._db.tasks.report.update_one(query, update)
+        if result.matched_count < 1:
+            raise RuntimeError(
+                "Report does not exist, it cannot be updated. Use upsert=True if you intended "
+                "to create a new report.")
 
     def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None, limit=None,
                        use_report=True, projection=None):
