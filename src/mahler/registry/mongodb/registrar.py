@@ -148,12 +148,10 @@ class MongoDBRegistrarDB(RegistrarDB):
         elif id is None and status:
             query['registry.status'] = {'$eq': status.name}
 
-        logger.debug('Querying tasks.report with query:\n{}'.format(pprint.pformat(query)))
-        if projection:
-            logger.debug(
-                'Querying tasks.report with projection:\n{}'.format( pprint.pformat(projection)))
-
-        cursor = self._db.tasks.report.find(query, projection=projection)
+        if '_id' not in query or use_report:
+            cursor = self._db.tasks.report.find(query, projection=projection)
+        else:
+            cursor = self._db.tasks.find(query, projection=projection)
 
         if limit:
             cursor = cursor.limit(int(limit))
