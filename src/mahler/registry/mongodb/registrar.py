@@ -226,9 +226,9 @@ class MongoDBRegistrarDB(RegistrarDB):
     def add_event(self, event_type, event_object):
         # event_object['creation_timestamp'] = str(event_object['creation_timestamp'])
         # event_object['runtime_timestamp'] = str(event_object['runtime_timestamp'])
-        event_object['_id'] = "{}.{}".format(str(event_object['task_id']), event_object['id'])
         try:
             self._db['tasks.{}'.format(event_type)].insert_one(event_object)
+            event_object['id'] = event_object.pop('_id')
         except pymongo.errors.DuplicateKeyError as e:
             message = ('Another {} was registered concurrently for '
                        'the task {}'.format(event_type, event_object['task_id']))
@@ -236,7 +236,13 @@ class MongoDBRegistrarDB(RegistrarDB):
 
     def retrieve_events(self, event_type, task):
         # TODO: Convert str -> datetimes 
-        for event in self._db['tasks.{}'.format(event_type)].find({'task_id': task.id}):
+        task_id = task.id
+        if not isinstance(task_id, bson.objectid.ObjectId):
+            task_id = bson.objectid.ObjectId(task_id)
+        query = {'task_id': task_id}
+
+        for event in self._db['tasks.{}'.format(event_type)].find(query):
+            event['id'] = event.pop('_id')
             yield event
 
     def set_output(self, task, output):
