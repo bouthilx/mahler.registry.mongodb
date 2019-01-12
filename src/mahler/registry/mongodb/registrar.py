@@ -25,6 +25,14 @@ import mahler.core.status
 logger = logging.getLogger(__name__)
 
 
+NON_INITIALIZED_WARNING = """\
+Database is not initialized and becaus of that queries will be very inefficient.
+To initialize the database, use the command:
+
+$ mahler registry mongodb init\
+"""
+
+
 class MongoDBRegistrarDB(RegistrarDB):
     """
     """
@@ -35,6 +43,18 @@ class MongoDBRegistrarDB(RegistrarDB):
         self._client = MongoClient(host)
         self._db = self._client[name]
 
+        if logger.isEnabledFor(logging.DEBUG):
+            self._verify_initialization()
+
+    def _verify_initialization(self):
+        for i, index_information in enumerate(self._db.tasks.report.list_indexes()):
+            if i > 1:
+                return True
+
+        logger.warning(NON_INITIALIZED_WARNING)
+        return False
+
+    def init(self):
         for subcollection in ['status', 'tags', 'stdout', 'stderr']:
             dbcollection = self._db['tasks.{}'.format(subcollection)]
             dbcollection.create_index([('task_id', pymongo.ASCENDING)], background=True)
