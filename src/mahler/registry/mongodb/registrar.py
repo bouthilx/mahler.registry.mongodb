@@ -33,7 +33,7 @@ class MongoDBRegistrarDB(RegistrarDB):
         """
         """
         self._client = MongoClient(host)
-        self._db = self._client.mahler_test
+        self._db = self._client[name]
 
         for subcollection in ['status', 'tags', 'stdout', 'stderr']:
             dbcollection = self._db['tasks.{}'.format(subcollection)]
