@@ -247,6 +247,7 @@ class MongoDBRegistrarDB(RegistrarDB):
 
     def set_output(self, task, output):
         self._db.tasks.update({'_id': task.id}, {'$set': {'output': output}})
+        task._output = output
         # query = (where('id') == task.id) & where('output') == None
         # ids = self._db.tasks.update(set('output', output), query)
         # assert ids == [task.id]
@@ -258,7 +259,11 @@ class MongoDBRegistrarDB(RegistrarDB):
         # assert ids == [task.id]
 
     def retrieve_output(self, task):
-        docs = self._db.tasks.find({'_id': task.id}, {'output': 1})
+        task_id = task.id
+        if not isinstance(task_id, bson.objectid.ObjectId):
+            task_id = bson.objectid.ObjectId(task_id)
+        query = {'task_id': task_id}
+        docs = list(self._db.tasks.find(query, {'output': 1}).limit(1))
         if docs:
             return docs[0]['output']
 
