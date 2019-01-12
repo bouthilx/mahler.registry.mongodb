@@ -38,6 +38,15 @@ class MongoDBRegistrarDB(RegistrarDB):
         for subcollection in ['status', 'tags', 'stdout', 'stderr']:
             dbcollection = self._db['tasks.{}'.format(subcollection)]
             dbcollection.create_index([('task_id', pymongo.ASCENDING)], background=True)
+            dbcollection.create_index([('key', pymongo.ASCENDING)], unique=True, background=True)
+
+        self._db.tasks.report.timestamp.create_index(
+            [('task_id', pymongo.ASCENDING),
+             ('_id', pymongo.ASCENDING)], background=True)
+
+        self._db.tasks.report.timestamp.create_index(
+            [('task_id', pymongo.ASCENDING),
+             ('_id', pymongo.DESCENDING)], background=True)
 
         self._db.tasks.status.create_index(
             [('runtime_timestamp', pymongo.DESCENDING)], background=True)
@@ -49,6 +58,16 @@ class MongoDBRegistrarDB(RegistrarDB):
             [('registry.tags', pymongo.ASCENDING)], background=True)
         self._db.tasks.report.create_index(
             [('registry.container', pymongo.ASCENDING)], background=True)
+
+        # self._db.tasks.report.create_index(
+        #     [('registry.reported_on', pymongo.ASCENDING)], background=True)
+
+        self._db.tasks.report.create_index(
+            [('registry.reported_on', pymongo.ASCENDING),
+             ('registry.status', pymongo.ASCENDING),
+             ('registry.tags', pymongo.ASCENDING)], background=True)
+
+        # Create unique index on ref_id
 
     # There is no need to register a task again, only update moving parts
     def register_task(self, task):
