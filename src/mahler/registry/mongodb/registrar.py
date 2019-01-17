@@ -282,7 +282,7 @@ class MongoDBRegistrarDB(RegistrarDB):
         task_id = task.id
         if not isinstance(task_id, bson.objectid.ObjectId):
             task_id = bson.objectid.ObjectId(task_id)
-        query = {'task_id': task_id}
+        query = {'_id': task_id}
         docs = list(self._db.tasks.find(query, {'output': 1}).limit(1))
         if docs:
             return docs[0]['output']
