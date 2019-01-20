@@ -9,6 +9,7 @@
 
 TODO: Write long description
 """
+import logging
 import os
 import socket
 
@@ -19,6 +20,9 @@ import mahler.registry.mongodb.cli.init
 
 from ._version import get_versions
 from .registrar import MongoDBRegistrarDB
+
+
+logger = logging.getLogger(__name__)
 
 
 VERSIONS = get_versions()
@@ -56,8 +60,14 @@ def define_config():
     config = mahler.core.utils.config.Configuration()
     config.add_option(
         'name', type=str, default='mahler', env_var='MAHLER_REGISTRY_MONGODB_NAME')
+    try:
+        default_host = socket.gethostbyname(socket.gethostname())
+    except socket.gaierror as e:
+        logger.warning("Cannot infer host IP, using 127.0.01 as default")
+        default_host = "127.0.0.1"
+
     config.add_option(
-        'host', type=str, default=socket.gethostbyname(socket.gethostname()),
+        'host', type=str, default=default_host,
         env_var='MAHLER_REGISTRY_MONGODB_HOST')
 
     return config
