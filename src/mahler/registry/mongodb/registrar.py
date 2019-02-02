@@ -292,3 +292,6 @@ class MongoDBRegistrarDB(RegistrarDB):
     def retrieve_volume(self, task):
         # TODO
         return None
+
+    def close(self):
+        self._client.close()
