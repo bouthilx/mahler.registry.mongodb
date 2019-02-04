@@ -133,7 +133,7 @@ class MongoDBRegistrarDB(RegistrarDB):
                 "to create a new report.")
 
     def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None, limit=None,
-                       use_report=True, projection=None):
+                       sort=None, use_report=True, projection=None):
         """
         """
         if limit is not None and limit < 1:
@@ -172,6 +172,9 @@ class MongoDBRegistrarDB(RegistrarDB):
             cursor = self._db.tasks.report.find(query, projection=projection)
         else:
             cursor = self._db.tasks.find(query, projection=projection)
+
+        if sort:
+            cursor = cursor.sort(sort)
 
         if limit:
             cursor = cursor.limit(int(limit))
