@@ -122,6 +122,8 @@ class MongoDBRegistrarDB(RegistrarDB):
                 }
             }
 
+        update['$set']['facility.host'] = task_report['facility']['host']
+
         if update_output:
             update['$set']['output'] = task_report['output']
             update['$set']['volume'] = task_report['volume']
