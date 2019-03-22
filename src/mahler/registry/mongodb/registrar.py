@@ -133,7 +133,7 @@ class MongoDBRegistrarDB(RegistrarDB):
                 "to create a new report.")
 
     def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None, limit=None,
-                       sort=None, use_report=True, projection=None):
+                       sort=None, host=None, use_report=True, projection=None):
         """
         """
         if limit is not None and limit < 1:
@@ -167,6 +167,11 @@ class MongoDBRegistrarDB(RegistrarDB):
             query['registry.status'] = {'$in': [status_i.name for status_i in status]}
         elif id is None and status:
             query['registry.status'] = {'$eq': status.name}
+
+        if id is None and host and isinstance(host, (list, tuple)):
+            query['facility.env.clustername'] = {'$in': host}
+        elif id is None and host:
+            query['facility.env.clustername'] = {'$eq': host}
 
         if '_id' not in query or use_report:
             cursor = self._db.tasks.report.find(query, projection=projection)
