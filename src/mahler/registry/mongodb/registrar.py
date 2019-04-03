@@ -171,9 +171,9 @@ class MongoDBRegistrarDB(RegistrarDB):
             query['registry.status'] = {'$eq': status.name}
 
         if id is None and host and isinstance(host, (list, tuple)):
-            query['facility.env.clustername'] = {'$in': host}
+            query['facility.host.env.clustername'] = {'$in': host}
         elif id is None and host:
-            query['facility.env.clustername'] = {'$eq': host}
+            query['facility.host.env.clustername'] = {'$eq': host}
 
         if '_id' not in query or use_report:
             cursor = self._db.tasks.report.find(query, projection=projection)
