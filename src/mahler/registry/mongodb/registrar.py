@@ -264,12 +264,15 @@ class MongoDBRegistrarDB(RegistrarDB):
                        'the task {}'.format(event_type, event_object['task_id']))
             raise RaceCondition(message) from e
 
-    def retrieve_events(self, event_type, task):
+    def retrieve_events(self, event_type, task, updated_after=None):
         # TODO: Convert str -> datetimes 
         task_id = task.id
         if not isinstance(task_id, bson.objectid.ObjectId):
             task_id = bson.objectid.ObjectId(task_id)
         query = {'task_id': task_id}
+
+        if updated_after:
+            query['_id'] = {'$gt': bson.objectid.ObjectId(updated_after)}
 
         for event in self._db['tasks.{}'.format(event_type)].find(query):
             event['id'] = event.pop('_id')
