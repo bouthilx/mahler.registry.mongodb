@@ -55,7 +55,7 @@ class MongoDBRegistrarDB(RegistrarDB):
         return False
 
     def init(self):
-        for subcollection in ['status', 'tags', 'stdout', 'stderr']:
+        for subcollection in ['status', 'tags', 'stdout', 'stderr', 'host', 'metrics']:
             dbcollection = self._db['tasks.{}'.format(subcollection)]
             dbcollection.create_index([('task_id', pymongo.ASCENDING)], background=True)
             dbcollection.create_index([('key', pymongo.ASCENDING)], unique=True, background=True)
@@ -72,20 +72,34 @@ class MongoDBRegistrarDB(RegistrarDB):
             [('runtime_timestamp', pymongo.DESCENDING)], background=True)
         self._db.tasks.tags.create_index([('item.tag', pymongo.ASCENDING)], background=True)
 
-        self._db.tasks.report.create_index(
-            [('registry.status', pymongo.ASCENDING)], background=True)
-        self._db.tasks.report.create_index(
-            [('registry.tags', pymongo.ASCENDING)], background=True)
-        self._db.tasks.report.create_index(
-            [('registry.container', pymongo.ASCENDING)], background=True)
-
         # self._db.tasks.report.create_index(
         #     [('registry.reported_on', pymongo.ASCENDING)], background=True)
 
         self._db.tasks.report.create_index(
             [('registry.reported_on', pymongo.ASCENDING),
+             ('facility.host.env.clustername', pymongo.ASCENDING),
              ('registry.status', pymongo.ASCENDING),
-             ('registry.tags', pymongo.ASCENDING)], background=True)
+             ('registry.tags', pymongo.ASCENDING),
+             ('registry.container', pymongo.ASCENDING)], background=True)
+
+        self._db.tasks.report.create_index(
+            [('facility.host.env.clustername', pymongo.ASCENDING),
+             ('registry.status', pymongo.ASCENDING),
+             ('registry.tags', pymongo.ASCENDING),
+             ('registry.container', pymongo.ASCENDING)], background=True)
+
+        self._db.tasks.report.create_index(
+            [('registry.status', pymongo.ASCENDING),
+             ('registry.tags', pymongo.ASCENDING),
+             ('registry.container', pymongo.ASCENDING)], background=True)
+
+        self._db.tasks.report.create_index(
+            [('registry.tags', pymongo.ASCENDING),
+             ('registry.container', pymongo.ASCENDING)], background=True)
+
+        self._db.tasks.report.create_index(
+            [('registry.container', pymongo.ASCENDING)], background=True)
+
 
         # Create unique index on ref_id
 
@@ -264,7 +278,7 @@ class MongoDBRegistrarDB(RegistrarDB):
                        'the task {}'.format(event_type, event_object['task_id']))
             raise RaceCondition(message) from e
 
-    def retrieve_events(self, event_type, task, updated_after=None):
+    def retrieve_events(self, event_type, task, sort=None, limit=None, updated_after=None):
         # TODO: Convert str -> datetimes 
         task_id = task.id
         if not isinstance(task_id, bson.objectid.ObjectId):
@@ -274,7 +288,15 @@ class MongoDBRegistrarDB(RegistrarDB):
         if updated_after:
             query['_id'] = {'$gt': bson.objectid.ObjectId(updated_after)}
 
-        for event in self._db['tasks.{}'.format(event_type)].find(query):
+        cursor = self._db['tasks.{}'.format(event_type)].find(query)
+
+        if sort:
+            cursor = cursor.sort(sort)
+
+        if limit:
+            cursor = cursor.limit(int(limit))
+
+        for event in cursor:
             event['id'] = event.pop('_id')
             yield event
 
