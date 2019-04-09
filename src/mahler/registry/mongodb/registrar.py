@@ -11,7 +11,6 @@ TODO: Write long description
 
 """
 import logging
-import pprint
 
 import bson.objectid
 from pymongo import MongoClient
@@ -60,6 +59,10 @@ class MongoDBRegistrarDB(RegistrarDB):
             dbcollection.create_index([('task_id', pymongo.ASCENDING)], background=True)
             dbcollection.create_index([('key', pymongo.ASCENDING)], unique=True, background=True)
 
+        self._db.tasks.metric.create_index(
+            [('item.value.type', pymongo.ASCENDING),
+             ('_id', pymongo.ASCENDING)], background=True)
+
         self._db.tasks.report.timestamp.create_index(
             [('task_id', pymongo.ASCENDING),
              ('_id', pymongo.ASCENDING)], background=True)
@@ -76,11 +79,7 @@ class MongoDBRegistrarDB(RegistrarDB):
         #     [('registry.reported_on', pymongo.ASCENDING)], background=True)
 
         self._db.tasks.report.create_index(
-            [('registry.reported_on', pymongo.ASCENDING),
-             ('facility.host.env.clustername', pymongo.ASCENDING),
-             ('registry.status', pymongo.ASCENDING),
-             ('registry.tags', pymongo.ASCENDING),
-             ('registry.container', pymongo.ASCENDING)], background=True)
+            [('registry.reported_on', pymongo.ASCENDING)], background=True)
 
         self._db.tasks.report.create_index(
             [('facility.host.env.clustername', pymongo.ASCENDING),
@@ -127,7 +126,10 @@ class MongoDBRegistrarDB(RegistrarDB):
         registry_fields_to_update = ['started_on', 'stopped_on', 'updated_on', 'reported_on',
                                      'duration', 'status', 'tags']
 
-        query = {'_id': task_report['id']}
+        if not isinstance(task_report['id'], bson.objectid.ObjectId):
+            query = {'_id': bson.objectid.ObjectId(task_report['id'])}
+        else: 
+            query = {'_id': task_report['id']}
 
         update = {
             '$set': {
@@ -270,6 +272,9 @@ class MongoDBRegistrarDB(RegistrarDB):
     def add_event(self, event_type, event_object):
         # event_object['creation_timestamp'] = str(event_object['creation_timestamp'])
         # event_object['runtime_timestamp'] = str(event_object['runtime_timestamp'])
+        if not isinstance(event_object['task_id'], bson.objectid.ObjectId):
+            event_object['task_id'] = bson.objectid.ObjectId(event_object['task_id'])
+
         try:
             self._db['tasks.{}'.format(event_type)].insert_one(event_object)
             event_object['id'] = event_object.pop('_id')
