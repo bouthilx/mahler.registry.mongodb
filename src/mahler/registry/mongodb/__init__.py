@@ -70,6 +70,10 @@ def define_config():
         'host', type=str, default=default_host,
         env_var='MAHLER_REGISTRY_MONGODB_HOST')
 
+    config.add_option(
+        'port', type=int, default=27017,
+        env_var='MAHLER_REGISTRY_MONGODB_PORT')
+
     return config
 
 

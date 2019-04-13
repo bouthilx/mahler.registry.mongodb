@@ -36,10 +36,10 @@ class MongoDBRegistrarDB(RegistrarDB):
     """
     """
 
-    def __init__(self, name, host):
+    def __init__(self, name, host, port):
         """
         """
-        self._client = MongoClient(host, socketTimeoutMS=20000)  # 20 seconds
+        self._client = MongoClient(host, port=port, socketTimeoutMS=20000)  # 20 seconds
         self._db = self._client[name]
 
         if logger.isEnabledFor(logging.DEBUG):
