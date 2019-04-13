@@ -59,15 +59,15 @@ class MongoDBRegistrarDB(RegistrarDB):
             dbcollection.create_index([('task_id', pymongo.ASCENDING)], background=True)
             dbcollection.create_index([('key', pymongo.ASCENDING)], unique=True, background=True)
 
-        self._db.tasks.metric.create_index(
-            [('item.value.type', pymongo.ASCENDING),
+        self._db.tasks.metrics.create_index(
+            [('item.type', pymongo.ASCENDING),
              ('_id', pymongo.ASCENDING)], background=True)
 
         self._db.tasks.report.timestamp.create_index(
             [('task_id', pymongo.ASCENDING),
              ('_id', pymongo.ASCENDING)], background=True)
 
-        self._db.tasks.report.timestamp.create_index(
+        self._db.tasks.status.create_index(
             [('task_id', pymongo.ASCENDING),
              ('_id', pymongo.DESCENDING)], background=True)
 
