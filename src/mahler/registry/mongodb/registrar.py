@@ -291,7 +291,7 @@ class MongoDBRegistrarDB(RegistrarDB):
         query = {'task_id': task_id}
 
         if updated_after:
-            query['_id'] = {'$gt': bson.objectid.ObjectId(updated_after)}
+            query['_id'] = {'$gte': bson.objectid.ObjectId(updated_after)}
 
         cursor = self._db['tasks.{}'.format(event_type)].find(query)
 
