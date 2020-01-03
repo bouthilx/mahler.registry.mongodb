@@ -150,8 +150,9 @@ class MongoDBRegistrarDB(RegistrarDB):
                 "Report does not exist, it cannot be updated. Use upsert=True if you intended "
                 "to create a new report.")
 
-    def retrieve_tasks(self, id=None, tags=tuple(), container=None, status=None, limit=None,
-                       sort=None, host=None, use_report=True, projection=None):
+    def retrieve_tasks(self, id=None, arguments=None, attributes=None, tags=tuple(), container=None,
+                       status=None, limit=None, sort=None, host=None, use_report=True,
+                       projection=None):
         """
         """
         if limit is not None and limit < 1:
@@ -172,6 +173,14 @@ class MongoDBRegistrarDB(RegistrarDB):
             if not isinstance(id, bson.objectid.ObjectId):
                 id = bson.objectid.ObjectId(id)
             query['_id'] = id
+
+        if id is None and arguments:
+            for key, value in arguments.items():
+                query[f'arguments.{key}'] = value
+
+        if id is None and attributes:
+            for key, value in attributes.items():
+                query[f'attributes.{key}'] = value
 
         if id is None and tags:
             query['registry.tags'] = {'$all': tags}
